@@ -1,13 +1,19 @@
 // server.js
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const { admin, db } = require("./firebase-admin");
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
+import dotenv from "dotenv";
+import stripeModule from "stripe";
+import { admin, db } from "./firebase-admin.js";
 
+dotenv.config();
+
+const stripe = stripeModule(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+// ... rest of your code (unchanged)
+
 
 app.use(cors({ origin: true }));
 app.use(bodyParser.json());
