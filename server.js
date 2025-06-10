@@ -6,11 +6,6 @@ import dotenv from "dotenv";
 import stripeModule from "stripe";
 import { admin, db } from "./firebase-admin.js";
 
-app.get("/", (req, res) => {
-  res.send("✅ Backend is alive with CORS");
-});
-
-
 console.log("🧠 server.js is executing...");
 
 
@@ -19,6 +14,10 @@ dotenv.config();
 const stripe = stripeModule(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+app.get("/", (req, res) => {
+  res.send("✅ Backend is alive with CORS");
+});
 
 // ✅ CORS — allow your frontend site
 
