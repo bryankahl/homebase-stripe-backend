@@ -6,6 +6,9 @@ import dotenv from "dotenv";
 import stripeModule from "stripe";
 import { admin, db } from "./firebase-admin.js";
 
+console.log("🧠 server.js is executing...");
+
+
 dotenv.config();
 
 const stripe = stripeModule(process.env.STRIPE_SECRET_KEY);
