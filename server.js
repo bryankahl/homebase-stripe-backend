@@ -15,7 +15,12 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 // ... rest of your code (unchanged)
 
 
-app.use(cors({ origin: true }));
+app.use(cors({
+  origin: "https://ai-agent-demo-9fe52.web.app", // your live frontend
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(bodyParser.json());
 app.use(bodyParser.raw({ type: "application/json" }));
 
