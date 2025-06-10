@@ -15,9 +15,21 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 // ... rest of your code (unchanged)
 
 
+const allowedOrigins = [
+  "https://ai-agent-demo-9fe52.web.app",
+  "http://localhost:5500"
+];
+
 app.use(cors({
-  origin: "https://ai-agent-demo-9fe52.web.app", // your live frontend
-  methods: ["GET", "POST"],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
