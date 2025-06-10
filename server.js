@@ -1,4 +1,3 @@
-// server.js
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -7,34 +6,34 @@ import stripeModule from "stripe";
 import { admin, db } from "./firebase-admin.js";
 
 dotenv.config();
-
 const stripe = stripeModule(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-// ... rest of your code (unchanged)
-
 
 const allowedOrigins = [
   "https://ai-agent-demo-9fe52.web.app",
   "http://localhost:5500"
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+// ✅ Place this *above* all route definitions
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200); // ✅ respond to preflight
+  }
+  next();
+});
 
 app.use(bodyParser.json());
 app.use(bodyParser.raw({ type: "application/json" }));
+
+// ✅ Your existing routes (leave unchanged below)
+
 
 // ✅ Create Checkout Session
 app.post("/create-checkout-session", async (req, res) => {
