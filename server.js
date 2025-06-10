@@ -8,12 +8,11 @@ import stripeModule from "stripe";
 import { admin, db } from "./firebase-admin.js";
 
 dotenv.config();
-
 const stripe = stripeModule(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// ✅ CORS middleware
+// ✅ CORS middleware (FIRST!)
 const allowedOrigins = ["https://ai-agent-demo-9fe52.web.app"];
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -23,23 +22,19 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
+  if (req.method === "OPTIONS") return res.sendStatus(200);
   next();
 });
 
-// ✅ Required parsers
+// ✅ JSON body parsing
 app.use(bodyParser.json());
-app.use(bodyParser.raw({ type: "application/json" }));
 
-// ✅ Simple test route
+// ✅ Health check route
 app.get("/", (req, res) => {
   res.send("🔥 Homebase AI backend is running.");
 });
 
-// ✅ Stripe Checkout Session
+// ✅ Stripe Checkout session creation
 app.post("/create-checkout-session", async (req, res) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) return res.status(401).json({ error: "Missing token" });
@@ -52,12 +47,7 @@ app.post("/create-checkout-session", async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
       customer_email: email,
       metadata: { uid },
       success_url: process.env.SUCCESS_URL,
@@ -71,10 +61,9 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// ✅ Stripe Webhook
-app.post("/webhook", (req, res) => {
+// ✅ Webhook endpoint (RAW parsing only here!)
+app.post("/webhook", bodyParser.raw({ type: "application/json" }), (req, res) => {
   const sig = req.headers["stripe-signature"];
-
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
@@ -86,13 +75,9 @@ app.post("/webhook", (req, res) => {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const uid = session.metadata.uid;
-
-    db.collection("businesses").doc(uid).set(
-      { isActive: true },
-      { merge: true }
-    )
-    .then(() => console.log(`✅ Activated user ${uid}`))
-    .catch(err => console.error(`❌ Failed to activate user ${uid}`, err));
+    db.collection("businesses").doc(uid).set({ isActive: true }, { merge: true })
+      .then(() => console.log(`✅ Activated user ${uid}`))
+      .catch(err => console.error(`❌ Failed to activate user ${uid}`, err));
   }
 
   res.status(200).send("OK");
@@ -100,5 +85,5 @@ app.post("/webhook", (req, res) => {
 
 // ✅ Start server
 const PORT = process.env.PORT || 8080;
-console.log("🧠 server.js is executing...");
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
