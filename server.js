@@ -13,15 +13,23 @@ const app = express();
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // ✅ CORS — allow your frontend site
+
 app.use(cors({
-  origin: "https://ai-agent-demo-9fe52.web.app", // 🔥 this MUST match your deployed frontend
+  origin: "*",
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
+
 // ✅ Body parsers
 app.use(bodyParser.json());
 app.use(bodyParser.raw({ type: "application/json" }));
+
+
+app.get("/", (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.send("✅ Backend is alive with CORS");
+});
 
 // ✅ Create Checkout Session
 app.post("/create-checkout-session", async (req, res) => {
