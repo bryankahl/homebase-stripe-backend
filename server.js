@@ -1,3 +1,4 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -6,34 +7,21 @@ import stripeModule from "stripe";
 import { admin, db } from "./firebase-admin.js";
 
 dotenv.config();
+
 const stripe = stripeModule(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-const allowedOrigins = [
-  "https://ai-agent-demo-9fe52.web.app",
-  "http://localhost:5500"
-];
+// ✅ CORS — allow your frontend site
+app.use(cors({
+  origin: "https://ai-agent-demo-9fe52.web.app", // 🔥 this MUST match your deployed frontend
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
-// ✅ Place this *above* all route definitions
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  }
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200); // ✅ respond to preflight
-  }
-  next();
-});
-
+// ✅ Body parsers
 app.use(bodyParser.json());
 app.use(bodyParser.raw({ type: "application/json" }));
-
-// ✅ Your existing routes (leave unchanged below)
-
 
 // ✅ Create Checkout Session
 app.post("/create-checkout-session", async (req, res) => {
@@ -67,11 +55,11 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// ✅ Webhook
+// ✅ Stripe Webhook
 app.post("/webhook", bodyParser.raw({ type: "application/json" }), (req, res) => {
   const sig = req.headers["stripe-signature"];
-
   let event;
+
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
@@ -94,5 +82,6 @@ app.post("/webhook", bodyParser.raw({ type: "application/json" }), (req, res) =>
   res.status(200).send("OK");
 });
 
+// ✅ Start server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
