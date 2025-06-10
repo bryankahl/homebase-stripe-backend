@@ -6,6 +6,11 @@ import dotenv from "dotenv";
 import stripeModule from "stripe";
 import { admin, db } from "./firebase-admin.js";
 
+app.get("/", (req, res) => {
+  res.send("✅ Backend is alive with CORS");
+});
+
+
 console.log("🧠 server.js is executing...");
 
 
