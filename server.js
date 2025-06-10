@@ -1,4 +1,5 @@
 // server.js
+
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -6,39 +7,39 @@ import dotenv from "dotenv";
 import stripeModule from "stripe";
 import { admin, db } from "./firebase-admin.js";
 
-console.log("🧠 server.js is executing...");
-
-
 dotenv.config();
 
 const stripe = stripeModule(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-app.get("/", (req, res) => {
-  res.send("✅ Backend is alive with CORS");
+// ✅ CORS middleware
+const allowedOrigins = ["https://ai-agent-demo-9fe52.web.app"];
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
 });
 
-// ✅ CORS — allow your frontend site
-
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-
-// ✅ Body parsers
+// ✅ Required parsers
 app.use(bodyParser.json());
 app.use(bodyParser.raw({ type: "application/json" }));
 
-
+// ✅ Simple test route
 app.get("/", (req, res) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  res.send("✅ Backend is alive with CORS");
+  res.send("🔥 Homebase AI backend is running.");
 });
 
-// ✅ Create Checkout Session
+// ✅ Stripe Checkout Session
 app.post("/create-checkout-session", async (req, res) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) return res.status(401).json({ error: "Missing token" });
@@ -54,13 +55,13 @@ app.post("/create-checkout-session", async (req, res) => {
       line_items: [
         {
           price: process.env.STRIPE_PRICE_ID,
-          quantity: 1
-        }
+          quantity: 1,
+        },
       ],
       customer_email: email,
       metadata: { uid },
       success_url: process.env.SUCCESS_URL,
-      cancel_url: process.env.CANCEL_URL
+      cancel_url: process.env.CANCEL_URL,
     });
 
     res.json({ url: session.url });
@@ -71,10 +72,10 @@ app.post("/create-checkout-session", async (req, res) => {
 });
 
 // ✅ Stripe Webhook
-app.post("/webhook", bodyParser.raw({ type: "application/json" }), (req, res) => {
+app.post("/webhook", (req, res) => {
   const sig = req.headers["stripe-signature"];
-  let event;
 
+  let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
@@ -98,5 +99,6 @@ app.post("/webhook", bodyParser.raw({ type: "application/json" }), (req, res) =>
 });
 
 // ✅ Start server
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 8080;
+console.log("🧠 server.js is executing...");
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
